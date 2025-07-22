@@ -21,7 +21,7 @@ public class PSManager implements Listener {
     private boolean enabled = false;
     private BukkitTask currentTask;
 
-    private ArrayList<PSChar> psChars = new ArrayList<>();
+    private final ArrayList<PSChar> psChars = new ArrayList<>();
 
     public PSManager(PlayerSwap main) {
         this.main = main;
