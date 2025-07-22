@@ -8,7 +8,7 @@ import java.util.Objects;
 
 public class PSCommand implements CommandExecutor {
 
-    private PSManager swapManager;
+    private final PSManager swapManager;
 
     public PSCommand(PlayerSwap main, PSManager swapManager) {
         this.swapManager = swapManager;

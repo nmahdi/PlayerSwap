@@ -1,6 +1,7 @@
 package com.playerswap;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -16,11 +17,20 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class PSManager implements Listener {
 
+    /*
+     * TO FIX:
+     *   - Holding items on your cursor in the inventory brings them with you on swap
+     *   - Remove swapping from currently dead players
+     *   - Public chat announcement
+     *   - Keeping chunks loaded
+     *   - Re-shuffling in case of bad shuffling
+     * */
+
     private final PlayerSwap main;
     private final Random random = ThreadLocalRandom.current();
+
     private boolean enabled = false;
     private BukkitTask currentTask;
-
     private final ArrayList<PSChar> psChars = new ArrayList<>();
 
     public PSManager(PlayerSwap main) {
@@ -30,7 +40,7 @@ public class PSManager implements Listener {
 
     public void swapOn() {
         enabled = true;
-        initiateSwap(3f);
+        initiateSwap(45f);
         System.out.println("Player Swap is now enabled");
     }
 
@@ -41,35 +51,42 @@ public class PSManager implements Listener {
     }
 
     /*
-    * Initiates an asynchronous delayed task based on the formula baseDelay+-2.0
+    * Initiates a delayed BukkitRunnable task based on the formula baseDelay+-2.0
     * in seconds.
     * */
-    private void initiateSwap(float baseDelay) {
-        float delay = baseDelay+random.nextFloat(-2, 2);
+    private void initiateSwap(float maxDelay) {
+        float delay = random.nextFloat() * (maxDelay - 5) + 5;
         currentTask = new BukkitRunnable() {
             @Override
             public void run() {
 
+                Bukkit.broadcastMessage(ChatColor.YELLOW + ChatColor.BOLD.toString() + "--------------------------");
+                Bukkit.broadcastMessage(ChatColor.GREEN + "Swap took " + delay + " seconds.");
+
                 int index = 0;
+                // Loop through online players, and save a snapshot of their information
                 for(Player currentPlayer : Bukkit.getOnlinePlayers()) {
                     psChars.get(index).fromPlayer(currentPlayer);
                     index++;
                 }
-                
+
+                // Shuffle the saved snapshots
                 Collections.shuffle(psChars);
 
                 index = 0;
+                // Apply all the saved information to the new Player
                 for(Player currentPlayer : Bukkit.getOnlinePlayers()) {
-                    psChars.get(index).swapTo(currentPlayer);
+                    psChars.get(index).applyTo(currentPlayer);
+                    Bukkit.broadcastMessage(ChatColor.AQUA + currentPlayer.getName() + " -> " + psChars.get(index).getPlayerName());
                     index++;
                 }
 
-                initiateSwap(baseDelay);
-                System.out.println("Ran after " + delay + " seconds");
+                initiateSwap(maxDelay);
+                Bukkit.broadcastMessage(ChatColor.YELLOW + ChatColor.BOLD.toString() + "--------------------------");
 
             }
 
-        }.runTaskLaterAsynchronously(main, (long)delay*20);
+        }.runTaskLater(main, (long)delay*20);
     }
 
     // Adds an empty PSChar object to the list

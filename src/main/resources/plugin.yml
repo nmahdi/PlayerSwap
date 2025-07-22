@@ -5,6 +5,6 @@ description: 'A simple player swapping plugin.'
 author: nmahdi
 commands:
   playerswap:
-    description: 'Main command.'
+    description: 'Toggles swapping.'
     aliases: ps
     permission: playerswap.admin

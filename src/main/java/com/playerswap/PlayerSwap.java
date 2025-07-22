@@ -5,13 +5,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class PlayerSwap extends JavaPlugin {
 
-    private PSManager swapManager;
+    private PSManager psManager;
+    private PSCommand psCommand;
 
     @Override
     public void onEnable() {
         super.onEnable();
-        this.swapManager = new PSManager(this);
-        new PSCommand(this, swapManager);
+        this.psManager = new PSManager(this);
+        this.psCommand = new PSCommand(this, psManager);
     }
 
     @Override
