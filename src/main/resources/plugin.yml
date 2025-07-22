@@ -1,0 +1,10 @@
+main: com.playerswap.PlayerSwap
+name: PlayerSwap
+version: '1.0'
+description: 'A simple player swapping plugin.'
+author: nmahdi
+commands:
+  playerswap:
+    description: 'Main command.'
+    aliases: ps
+    permission: playerswap.admin
