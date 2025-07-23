@@ -1,0 +1,20 @@
+# The minimum & maximum amount of time a swap can happen.
+# The delay is a randomly generated value between these two values. (in seconds)
+min-delay: 5.0
+max-delay: 45.0
+#
+# Use '&' for color codes
+# Chat Placeholders:
+#   - '%original%' ~ The original player (Only works in swap-message)
+#   - '%new%'      ~ The new player (Only works in swap-message)
+#   - '&delay%'    ~ How long the swap took (Only works in swap-format)
+#   - '%msg%'      ~ The individual swap message (Only works in swap-format)
+#
+# The individual message that's sent for every player that is swapped
+swap-message: '&b%original% -> %new%'
+# Only initialize one line for swap-message as '%msg%'
+swap-format:
+  - '&e&l----------------------------'
+  - '&aSwap took: %delay% seconds.'
+  - '%msg%'
+  - '&e&l----------------------------'
