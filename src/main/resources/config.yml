@@ -3,17 +3,17 @@
 min-delay: 5.0
 max-delay: 45.0
 #
+# The message that's sent for every player that is swapped
+# swap-format is replaced with %msg% that's defined in swap-message
+# Only initialize one line for swap-format as '%msg%'
 # Use '&' for color codes
 # Chat Placeholders:
 #   - '%original%' ~ The original player (Only works in swap-message)
 #   - '%new%'      ~ The new player (Only works in swap-message)
 #   - '&delay%'    ~ How long the swap took (Only works in swap-format)
 #   - '%msg%'      ~ The individual swap message (Only works in swap-format)
-#
-# The individual message that's sent for every player that is swapped
-swap-message: '&b%original% -> %new%'
-# Only initialize one line for swap-message as '%msg%'
-swap-format:
+swap-format: '&b%original% -> %new%'
+swap-message:
   - '&e&l----------------------------'
   - '&aSwap took: %delay% seconds.'
   - '%msg%'

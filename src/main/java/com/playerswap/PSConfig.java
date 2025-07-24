@@ -5,16 +5,22 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class PSConfig {
+
+    private final String MIN_DELAY = "min-delay";
+    private final String MAX_DELAY = "max-delay";
+    private final String SWAP_FORMAT = "swap-format";
+    private final String SWAP_MESSAGE = "swap-message";
 
     private final File file;
     private final FileConfiguration config;
 
     private double minDelay, maxDelay;
-    private String swapMessage;
-    private ArrayList<String> swapFormat = new ArrayList<>();
+    private String swapFormat;
+    private final ArrayList<String> swapMessage = new ArrayList<>();
 
     public PSConfig(PlayerSwap main) {
         this.file = new File(main.getDataFolder(), "config.yml");
@@ -32,18 +38,22 @@ public class PSConfig {
 
         config = YamlConfiguration.loadConfiguration(file);
 
-        if(config.contains("min-delay")) {
-            minDelay = config.getDouble("min-delay");
+        if(config.contains(MIN_DELAY)) {
+            minDelay = config.getDouble(MIN_DELAY);
         }else{
             minDelay = 5d;
         }
 
-        maxDelay = config.getInt("max-delay");
+        if(config.contains(MAX_DELAY)) {
+            maxDelay = config.getInt(MAX_DELAY);
+        }else{
+            maxDelay = 45d;
+        }
 
-        swapMessage = ChatColor.translateAlternateColorCodes('&', config.getString("swap-message"));
+        swapFormat = ChatColor.translateAlternateColorCodes('&', config.getString(SWAP_FORMAT));
 
-        for(String s : config.getStringList("swap-format")) {
-            swapFormat.add(ChatColor.translateAlternateColorCodes('&', s));
+        for(String s : config.getStringList(SWAP_MESSAGE)) {
+            swapMessage.add(ChatColor.translateAlternateColorCodes('&', s));
         }
     }
 
@@ -51,16 +61,32 @@ public class PSConfig {
         return minDelay;
     }
 
+    public void setMinDelay(double minDelay) throws IOException {
+        this.minDelay = minDelay;
+        config.set(MIN_DELAY, minDelay);
+        config.save(file);
+    }
+
     public double getMaxDelay() {
         return maxDelay;
     }
 
-    public String getSwapMessage() {
-        return swapMessage;
+    public void setMaxDelay(double maxDelay) throws IOException {
+        this.maxDelay = maxDelay;
+        config.set(MAX_DELAY, maxDelay);
+        config.save(file);
     }
 
-    public ArrayList<String> getSwapFormat() {
+    public String getSwapFormat() {
         return swapFormat;
+    }
+
+    public void setSwapFormat(String swapFormat) {
+        this.swapFormat = swapFormat;
+    }
+
+    public ArrayList<String> getSwapMessage() {
+        return swapMessage;
     }
 
 

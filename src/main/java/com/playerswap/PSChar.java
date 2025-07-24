@@ -3,11 +3,13 @@ package com.playerswap;
 import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.util.Vector;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -15,7 +17,9 @@ import java.util.Set;
 
 public class PSChar {
 
-    private static HashSet<InventoryType> INV_TYPES = new HashSet<>(Set.of(InventoryType.CRAFTING, InventoryType.WORKBENCH, InventoryType.ANVIL));
+    // All inventory types that will drop their items when a swap is initiated.
+    private static HashSet<InventoryType> INV_TYPES = new HashSet<>(Set.of(InventoryType.CRAFTING, InventoryType.WORKBENCH, InventoryType.ANVIL,
+            InventoryType.ENCHANTING, InventoryType.SMITHING, InventoryType.CARTOGRAPHY, InventoryType.STONECUTTER, InventoryType.GRINDSTONE));
 
     private String playerName;
     private double health;
@@ -24,8 +28,10 @@ public class PSChar {
     private Location location;
     private ItemStack[] inventory;
     private Collection<PotionEffect> potionEffects;
+    private Entity vehicle;
+    private Vector velocity;
 
-    public PSChar fromPlayer(Player player) {
+    public void fromPlayer(Player player) {
         this.playerName = player.getName();
         this.health = player.getHealth();
         this.foodLevel = player.getFoodLevel();
@@ -33,7 +39,13 @@ public class PSChar {
         this.location = player.getLocation();
         this.inventory = player.getInventory().getContents();
         this.potionEffects = player.getActivePotionEffects();
-        return this;
+        if(player.isInsideVehicle()) {
+            this.vehicle = player.getVehicle();
+            assert vehicle != null;
+            this.velocity = vehicle.getVelocity();
+        }else{
+            this.velocity = player.getVelocity();
+        }
     }
 
     /*
@@ -44,6 +56,8 @@ public class PSChar {
             - Location
             - Inventory
             - Potion Effects
+            - Vehicle
+            - Velocity
     * */
     public void applyTo(Player otherPlayer) {
         if(otherPlayer.getName().equals(playerName)) return; // Return early if it's the same player
@@ -72,10 +86,22 @@ public class PSChar {
         otherPlayer.setHealth(health);
         otherPlayer.setFoodLevel(foodLevel);
         otherPlayer.setSaturation(saturation);
-        otherPlayer.teleport(location);
+
+        // If vehicle is null then teleport the player. If not, teleport the vehicle.
+        if(vehicle == null) {
+            otherPlayer.teleport(location);
+            otherPlayer.setVelocity(velocity);
+        }else{
+            vehicle.teleport(location.add(0, 0.5d, 0));
+            vehicle.setVelocity(velocity);
+        }
+
         otherPlayer.getInventory().setContents(inventory);
-        otherPlayer.getActivePotionEffects().clear();
-        otherPlayer.getActivePotionEffects().addAll(potionEffects);
+        // Remove all potion effects
+        for(PotionEffect effect : otherPlayer.getActivePotionEffects()) {
+            otherPlayer.removePotionEffect(effect.getType());
+        }
+        otherPlayer.addPotionEffects(potionEffects);
 
         otherPlayer.playSound(otherPlayer, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 0.5f);
     }

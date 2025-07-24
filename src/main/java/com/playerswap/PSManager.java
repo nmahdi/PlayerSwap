@@ -8,7 +8,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -22,18 +21,17 @@ public class PSManager implements Listener {
 
     /*
      * TO DO:
-     *   - Improve responsiveness of the playerswap command
-     *   - Fix items disappearing from external inventories when swapping is initiated
-     *   - Create a system for keeping the swpaping enabeld when dying & respawning with 2 people.
-     *   - Whitelist the following inventory types: Enchantment table, Smithing Table, Cryptography Table, SonteCutter, Grindstone
-     *   - Fix potion affects swapping
-     *   - Copy and swap the velocity vector of players.
-     *   - Teleport entities that are attached to players like boats, pigs, horses
+     *      - Create a system for keeping the swapping enabled when dying & respawning with 2 people.
      * TO TEST:
-     *   - Remove swapping from currently dead players
+     *      - PSCommand args
+     *      - Remove swapping from currently dead players
+     *      - Fix items disappearing from external inventories when swapping is initiated
+     *      - INV_TYPES logic
+     *      - Potion affects swapping
+     *      - Teleport entities that are attached to players like boats, pigs, horses
+     *      - Velocity
      * INTENTIONAL FEATURES:
-     *   - A player can throw an ender pearl before they swap, and will get teleported again when their ender pearl lands
-     *   -
+     *      - A player can throw an ender pearl before they swap, and will get teleported again when their ender pearl lands
      * */
 
     private final PlayerSwap main;
@@ -42,9 +40,10 @@ public class PSManager implements Listener {
 
     private boolean enabled = false;
     private BukkitTask currentTask;
-    private final ArrayList<Player> players = new ArrayList<>();
-    private final ArrayList<PSChar> psChars = new ArrayList<>();
-    private final ArrayList<Chunk> loadedChunks = new ArrayList<>();
+
+    public final ArrayList<Player> PLAYERS = new ArrayList<>();
+    public final ArrayList<PSChar> PSCHARS = new ArrayList<>();
+    public final ArrayList<Chunk> LOADED_CHUNKS = new ArrayList<>();
 
     public PSManager(PlayerSwap main) {
         this.main = main;
@@ -55,7 +54,7 @@ public class PSManager implements Listener {
     public void toggleSwap(CommandSender sender) {
         if(!enabled) {
 
-            if(players.size() < 2) {
+            if(PLAYERS.size() < 2) {
                 sender.sendMessage(ChatColor.RED + "[PlayerSwap] You need at least two people to turn on player swap.");
                 return;
             }
@@ -82,21 +81,21 @@ public class PSManager implements Listener {
 
                 int index = 0;
                 // Loop through online players, and save a snapshot of their information
-                for(Player currentPlayer : players) {
-                    psChars.get(index).fromPlayer(currentPlayer);
+                for(Player currentPlayer : PLAYERS) {
+                    PSCHARS.get(index).fromPlayer(currentPlayer);
                     // Add a chunk ticket to ensure the chunk is loading
-                    loadedChunks.add(currentPlayer.getWorld().getChunkAt(currentPlayer.getLocation()));
+                    LOADED_CHUNKS.add(currentPlayer.getWorld().getChunkAt(currentPlayer.getLocation()));
                     currentPlayer.getWorld().getChunkAt(currentPlayer.getLocation()).addPluginChunkTicket(main);
                     index++;
                 }
 
                 // Shuffle the saved snapshots
-                ArrayList<PSChar> shuffled = new ArrayList<>(psChars);
-                validateShuffle(psChars, shuffled);
+                ArrayList<PSChar> shuffled = new ArrayList<>(PSCHARS);
+                validateShuffle(PSCHARS, shuffled);
 
                 // Print swap message & replace placeholders
                 int swapIndex = 0;
-                for(String s : config.getSwapFormat()) {
+                for(String s : config.getSwapMessage()) {
                     if(s.contains("%msg%")) break; // Break early if it's the player's message.
                     Bukkit.broadcastMessage(s.replaceAll("%delay%", String.format("%.2f", delay)));
                     swapIndex++;
@@ -104,22 +103,22 @@ public class PSManager implements Listener {
 
                 index = 0;
                 // Apply all the saved information to the new Player
-                for(Player currentPlayer : players) {
-                    psChars.get(index).applyTo(currentPlayer);
+                for(Player currentPlayer : PLAYERS) {
+                    PSCHARS.get(index).applyTo(currentPlayer);
 
-                    Bukkit.broadcastMessage(config.getSwapMessage().replaceAll("%original%", psChars.get(index).getPlayerName())
+                    Bukkit.broadcastMessage(config.getSwapFormat().replaceAll("%original%", PSCHARS.get(index).getPlayerName())
                             .replaceAll("%new%", currentPlayer.getName()));
 
                     index++;
                 }
 
                 // Print the rest of the swap message.
-                for(int i = swapIndex+1; i < config.getSwapFormat().size(); i++) {
-                    Bukkit.broadcastMessage(config.getSwapFormat().get(i).replaceAll("%delay%", String.format("%.2f", delay)));
+                for(int i = swapIndex+1; i < config.getSwapMessage().size(); i++) {
+                    Bukkit.broadcastMessage(config.getSwapMessage().get(i).replaceAll("%delay%", String.format("%.2f", delay)));
                 }
 
                 // Remove all the chunk tickets
-                for(Chunk chunk : loadedChunks) {
+                for(Chunk chunk : LOADED_CHUNKS) {
                     chunk.removePluginChunkTicket(main);
                 }
 
@@ -174,16 +173,19 @@ public class PSManager implements Listener {
 
     // Adds an empty PSChar object to the list
     private void addPlayer(Player player) {
-        players.add(player);
-        psChars.add(new PSChar());
+        PLAYERS.add(player);
+        PSCHARS.add(new PSChar());
     }
 
     // Removes the last PSChar object from the list
     private void removePlayer(Player player) {
-        players.remove(player);
-        psChars.remove(psChars.size()-1);
+        PLAYERS.remove(player);
+        PSCHARS.remove(PSCHARS.size() - 1);
     }
 
+    public PSConfig getConfig() {
+        return config;
+    }
 
     public boolean isEnabled() {
         return enabled;
