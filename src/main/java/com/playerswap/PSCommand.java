@@ -4,11 +4,13 @@ import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
-public class PSCommand implements CommandExecutor {
+public class PSCommand implements CommandExecutor, TabExecutor {
 
     private final PSManager psManager;
     private final PSConfig psConfig;
@@ -21,7 +23,7 @@ public class PSCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if(cmd.getName().equalsIgnoreCase("playerswap") && sender.hasPermission("playerswap.admin")) {
+        if(/*cmd.getName().equalsIgnoreCase("playerswap") && */ sender.hasPermission("playerswap.admin")) {
 
             if(args.length < 1) {
                 sender.sendMessage(ChatColor.GRAY + "/playerswap toggle - Toggles swapping on/off" +
@@ -83,4 +85,12 @@ public class PSCommand implements CommandExecutor {
         return true;
     }
 
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
+        if(args.length == 1) {
+
+        }
+        return List.of();
+    }
 }

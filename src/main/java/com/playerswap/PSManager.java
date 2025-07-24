@@ -22,14 +22,13 @@ public class PSManager implements Listener {
     /*
      * TO DO:
      *      - Create a system for keeping the swapping enabled when dying & respawning with 2 people.
-     * TO TEST:
-     *      - PSCommand args
-     *      - Remove swapping from currently dead players
-     *      - Fix items disappearing from external inventories when swapping is initiated
-     *      - INV_TYPES logic
-     *      - Potion affects swapping
+     *      - Create a better chunk loading system
      *      - Teleport entities that are attached to players like boats, pigs, horses
-     *      - Velocity
+     *      - Use dropItem instead of dropItemNaturally()
+     *      - Enchantment Smithing Stonecutter Cortagoraphy -- Add to anvil check
+     *      - InventoryTypes: Merchant, Loom, 
+     * TO TEST:
+     *      - Remove swapping from currently dead players
      * INTENTIONAL FEATURES:
      *      - A player can throw an ender pearl before they swap, and will get teleported again when their ender pearl lands
      * */
