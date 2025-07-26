@@ -22,13 +22,13 @@ public class PSManager implements Listener {
     /*
      * TO DO:
      *      - Create a system for keeping the swapping enabled when dying & respawning with 2 people.
-     *      - Create a better chunk loading system
-     *      - Teleport entities that are attached to players like boats, pigs, horses
-     *      - Use dropItem instead of dropItemNaturally()
-     *      - Enchantment Smithing Stonecutter Cortagoraphy -- Add to anvil check
-     *      - InventoryTypes: Merchant, Loom, 
      * TO TEST:
+     *      - Top inventory view dropping items
      *      - Remove swapping from currently dead players
+     *      - Teleport entities that are attached to players like boats, pigs, horses
+     *      - New config settings (swap-settings)
+     *      - Spamming /ps run
+     *      - ps settings/sound
      * INTENTIONAL FEATURES:
      *      - A player can throw an ender pearl before they swap, and will get teleported again when their ender pearl lands
      * */
@@ -37,12 +37,14 @@ public class PSManager implements Listener {
     private final PSConfig config;
     private final Random random = ThreadLocalRandom.current();
 
-    private boolean enabled = false;
+    private boolean swapToggle = false;
+    private boolean singleSwap = false;
     private BukkitTask currentTask;
 
     public final ArrayList<Player> PLAYERS = new ArrayList<>();
-    public final ArrayList<PSChar> PSCHARS = new ArrayList<>();
     public final ArrayList<Chunk> LOADED_CHUNKS = new ArrayList<>();
+
+    public final String PREFIX = "[PlayerSwap] ";
 
     public PSManager(PlayerSwap main) {
         this.main = main;
@@ -50,47 +52,66 @@ public class PSManager implements Listener {
         this.main.getServer().getPluginManager().registerEvents(this, main);
     }
 
+    // Toggles the swap mode on/off
     public void toggleSwap(CommandSender sender) {
-        if(!enabled) {
+        if(!swapToggle) {
 
             if(PLAYERS.size() < 2) {
-                sender.sendMessage(ChatColor.RED + "[PlayerSwap] You need at least two people to turn on player swap.");
+                sender.sendMessage(ChatColor.RED + PREFIX + "You need at least two people to turn on player swap.");
                 return;
             }
 
-            enabled = true;
-            initiateSwap();
-            sender.sendMessage(ChatColor.GREEN + "[PlayerSwap] Swapping has been enabled.");
+            swapToggle = true;
+            initiateSwap(true);
+            sender.sendMessage(ChatColor.GREEN + PREFIX + "Swapping has been enabled.");
             return;
         }
 
-        enabled = false;
+        swapToggle = false;
         currentTask.cancel();
-        sender.sendMessage(ChatColor.GREEN + "[PlayerSwap] Swapping has been disabled.");
+        sender.sendMessage(ChatColor.GREEN + PREFIX + "Swapping has been disabled.");
+    }
+
+    public void swap(CommandSender sender) {
+        if(singleSwap) {
+            sender.sendMessage(ChatColor.RED + PREFIX + "A swap has already been initiated.");
+            return;
+        }
+        else if(PLAYERS.size() < 2) {
+            sender.sendMessage(ChatColor.RED + PREFIX + "You need at least two people to turn on player swap.");
+            return;
+        }
+
+        // Set singleSwap to true to reduce '/ps run' spam
+        singleSwap = true;
+        initiateSwap(false);
+        sender.sendMessage(ChatColor.GREEN + PREFIX + "A single swap has been initiated.");
     }
 
     /*
     * Initiates a delayed BukkitRunnable task based from 5 to the provided maxDelay in seconds.
+    * Will recursively run if continuous is true
     * */
-    private void initiateSwap() {
+    private void initiateSwap(boolean continuous) {
         double delay = random.nextDouble() * (config.getMaxDelay() - config.getMinDelay()) + config.getMinDelay();
         currentTask = new BukkitRunnable() {
             @Override
             public void run() {
 
+                ArrayList<PSChar> chars = new ArrayList<>();
+
                 int index = 0;
                 // Loop through online players, and save a snapshot of their information
                 for(Player currentPlayer : PLAYERS) {
-                    PSCHARS.get(index).fromPlayer(currentPlayer);
+                    chars.add(new PSChar(currentPlayer));
                     // Add a chunk ticket to ensure the chunk is loading
-                    LOADED_CHUNKS.add(currentPlayer.getWorld().getChunkAt(currentPlayer.getLocation()));
-                    currentPlayer.getWorld().getChunkAt(currentPlayer.getLocation()).addPluginChunkTicket(main);
+                    loadChunk(currentPlayer.getLocation().getChunk());
                     index++;
                 }
 
                 // Shuffle the saved snapshots
-                ArrayList<PSChar> shuffled = new ArrayList<>(PSCHARS);
-                validateShuffle(PSCHARS, shuffled);
+                ArrayList<PSChar> shuffled = new ArrayList<>(chars);
+                validateShuffle(chars, shuffled);
 
                 // Print swap message & replace placeholders
                 int swapIndex = 0;
@@ -103,10 +124,10 @@ public class PSManager implements Listener {
                 index = 0;
                 // Apply all the saved information to the new Player
                 for(Player currentPlayer : PLAYERS) {
-                    PSCHARS.get(index).applyTo(currentPlayer);
+                    chars.get(index).applyTo(config, currentPlayer);
 
-                    Bukkit.broadcastMessage(config.getSwapFormat().replaceAll("%original%", PSCHARS.get(index).getPlayerName())
-                            .replaceAll("%new%", currentPlayer.getName()));
+                    Bukkit.broadcastMessage(config.getSwapFormat().replaceAll("%original%",currentPlayer.getName())
+                            .replaceAll("%new%", chars.get(index).getPlayerName()));
 
                     index++;
                 }
@@ -116,12 +137,17 @@ public class PSManager implements Listener {
                     Bukkit.broadcastMessage(config.getSwapMessage().get(i).replaceAll("%delay%", String.format("%.2f", delay)));
                 }
 
-                // Remove all the chunk tickets
+                // Remove all the chunk tickets & clear LOADED_CHUNKS
                 for(Chunk chunk : LOADED_CHUNKS) {
                     chunk.removePluginChunkTicket(main);
                 }
+                LOADED_CHUNKS.clear();
 
-                initiateSwap();
+                // Set single swap back to false so '/ps run' can be used again
+                singleSwap = false;
+
+                if(continuous)
+                    initiateSwap(true);
 
             }
 
@@ -139,7 +165,7 @@ public class PSManager implements Listener {
         removePlayer(e.getPlayer());
         // Automatically disables swap mode when all players leave
         if(e.getPlayer().getServer().getOnlinePlayers().size() == 2) {
-            enabled = false;
+            swapToggle = false;
             currentTask.cancel();
             System.out.println("Swapping has been disabled since there is less than 2 people on.");
         }
@@ -150,9 +176,9 @@ public class PSManager implements Listener {
         removePlayer(e.getEntity());
         // Automatically disables swap mode when all players leave
         if(e.getEntity().getServer().getOnlinePlayers().size() == 2) {
-            enabled = false;
+            swapToggle = false;
             currentTask.cancel();
-            System.out.println("Swapping has been disabled since there is less than 2 people on.");
+            System.out.println("Swapping has been disabled since there is less than 2 people alive.");
         }
     }
 
@@ -173,20 +199,28 @@ public class PSManager implements Listener {
     // Adds an empty PSChar object to the list
     private void addPlayer(Player player) {
         PLAYERS.add(player);
-        PSCHARS.add(new PSChar());
     }
 
     // Removes the last PSChar object from the list
     private void removePlayer(Player player) {
         PLAYERS.remove(player);
-        PSCHARS.remove(PSCHARS.size() - 1);
+    }
+
+    // Adds a chunk ticket to the 5x5 chunks around (including) the provided chunk
+    private void loadChunk(Chunk chunk) {
+        for(int x = chunk.getX()-2; x < chunk.getX()+2; x++){
+            for(int z = chunk.getZ()-2; z < chunk.getZ()+2; z++) {
+                Chunk newChunk = chunk.getWorld().getChunkAt(x, z);
+                if(!newChunk.getPluginChunkTickets().contains(main)) {
+                    chunk.addPluginChunkTicket(main);
+                    LOADED_CHUNKS.add(newChunk);
+                }
+            }
+        }
     }
 
     public PSConfig getConfig() {
         return config;
     }
 
-    public boolean isEnabled() {
-        return enabled;
-    }
 }

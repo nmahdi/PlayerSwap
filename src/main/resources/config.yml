@@ -1,7 +1,29 @@
 # The minimum & maximum amount of time a swap can happen.
 # The delay is a randomly generated value between these two values. (in seconds)
+# The minimum delay cannot be less than 1s.
 min-delay: 5.0
 max-delay: 45.0
+#
+# Swapped Attributes (Turning any value to false will disable that value from swapping)
+# NOTES:
+#     - For velocity swapping to be enabled, location also has to be enabled
+#     - Toggling vehicle to true will make players swap with their boats/minecarts/horses etc...
+swap:
+  health: true
+  hunger: true
+  saturation: true
+  location: true
+  inventory: true
+  potion-effects: true
+  vehicle: true
+  velocity: true
+#
+# The sound effect played when a player is swapped. (Players for every player if they are successfully swapped)
+# Volume & Pitch range: (0 .0-1.0)
+swap-sound:
+  name: 'ENTITY_EXPERIENCE_ORB_PICKUP'
+  volume: 0.5
+  pitch: 0.5
 #
 # The message that's sent for every player that is swapped
 # swap-format is replaced with %msg% that's defined in swap-message

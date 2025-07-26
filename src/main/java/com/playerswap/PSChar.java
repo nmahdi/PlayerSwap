@@ -5,39 +5,34 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 public class PSChar {
 
-    // All inventory types that will drop their items when a swap is initiated.
-    private static HashSet<InventoryType> INV_TYPES = new HashSet<>(Set.of(InventoryType.CRAFTING, InventoryType.WORKBENCH, InventoryType.ANVIL,
-            InventoryType.ENCHANTING, InventoryType.SMITHING, InventoryType.CARTOGRAPHY, InventoryType.STONECUTTER, InventoryType.GRINDSTONE));
-
-    private String playerName;
-    private double health;
-    private int foodLevel;
-    private float saturation;
-    private Location location;
-    private ItemStack[] inventory;
-    private Collection<PotionEffect> potionEffects;
+    private final Player player;
+    private final double health;
+    private final int foodLevel;
+    private final float saturation;
+    private final Location location;
+    private final ItemStack[] inventory;
+    private final Inventory topInventory;
+    private final Collection<PotionEffect> potionEffects;
     private Entity vehicle;
-    private Vector velocity;
+    private final Vector velocity;
 
-    public void fromPlayer(Player player) {
-        this.playerName = player.getName();
+    public PSChar(Player player) {
+        this.player = player;
         this.health = player.getHealth();
         this.foodLevel = player.getFoodLevel();
         this.saturation = player.getSaturation();
         this.location = player.getLocation();
         this.inventory = player.getInventory().getContents();
+        this.topInventory = player.getOpenInventory().getTopInventory();
         this.potionEffects = player.getActivePotionEffects();
         if(player.isInsideVehicle()) {
             this.vehicle = player.getVehicle();
@@ -59,54 +54,66 @@ public class PSChar {
             - Vehicle
             - Velocity
     * */
-    public void applyTo(Player otherPlayer) {
-        if(otherPlayer.getName().equals(playerName)) return; // Return early if it's the same player
+    public void applyTo(PSConfig config, Player otherPlayer) {
+        if(otherPlayer.getName().equals(player.getName())) return; // Return early if it's the same player
 
         World world = otherPlayer.getWorld();
 
-        // Check if the player has an item on their cursor, then remove it and drop it in the world
-        ItemStack cursor = otherPlayer.getItemOnCursor();
-        if(!cursor.getType().isAir()) {
-            otherPlayer.setItemOnCursor(null);
-            world.dropItemNaturally(otherPlayer.getLocation(), cursor);
-        }
+        if(config.getSwapSetting(SwapAttribute.Location)) {
+            // If the original player had a top inventory open, close their inventory then drop
+            // the items from the top inventory in the world.
+//            if(topInventory.length != 0) {
+//                player.closeInventory();
+//                for(ItemStack stack : topInventory) {
+//                    world.dropItem(player.getLocation(), stack);
+//                }
+//            }
+            player.closeInventory();
+            otherPlayer.openInventory(topInventory);
 
-        // Check if a player had an external inventory open that drops items, then drop the items in the world.
-        Inventory topInv = otherPlayer.getOpenInventory().getTopInventory();
-        if(INV_TYPES.contains(topInv.getType())) {
-            ItemStack[] contents = topInv.getContents();
-            topInv.clear();
-            // Drop all items except the output slot items. With the exception being anvils.
-            int cutoffIndex = contents.length - (topInv.getType().equals(InventoryType.ANVIL) ? 0 : 1);
-            for(int i = 0; i < cutoffIndex; i++) {
-                world.dropItemNaturally(otherPlayer.getLocation(), contents[i]);
+
+            // If vehicle is null then teleport the player. If not, teleport the vehicle.
+            if(vehicle == null) {
+                otherPlayer.teleport(location);
+                otherPlayer.setVelocity(velocity);
+            }else{
+                // Make the original player exist vehicle, then teleport the vehicle & new player,
+                // then make the new player enter the vehicle & apply vehicle's velocity.
+                player.leaveVehicle();
+                vehicle.teleport(location.add(0, 0.5d, 0));
+                otherPlayer.teleport(vehicle);
+                vehicle.addPassenger(otherPlayer);
+                vehicle.setVelocity(velocity);
             }
         }
-
-        otherPlayer.setHealth(health);
-        otherPlayer.setFoodLevel(foodLevel);
-        otherPlayer.setSaturation(saturation);
-
-        // If vehicle is null then teleport the player. If not, teleport the vehicle.
-        if(vehicle == null) {
-            otherPlayer.teleport(location);
-            otherPlayer.setVelocity(velocity);
-        }else{
-            vehicle.teleport(location.add(0, 0.5d, 0));
-            vehicle.setVelocity(velocity);
+        if(config.getSwapSetting(SwapAttribute.Health)) {
+            otherPlayer.setHealth(health);
         }
 
-        otherPlayer.getInventory().setContents(inventory);
-        // Remove all potion effects
-        for(PotionEffect effect : otherPlayer.getActivePotionEffects()) {
-            otherPlayer.removePotionEffect(effect.getType());
+        if(config.getSwapSetting(SwapAttribute.Hunger)) {
+            otherPlayer.setFoodLevel(foodLevel);
         }
-        otherPlayer.addPotionEffects(potionEffects);
+
+        if(config.getSwapSetting(SwapAttribute.Saturation)) {
+            otherPlayer.setSaturation(saturation);
+        }
+
+        if(config.getSwapSetting(SwapAttribute.Inventory)) {
+            otherPlayer.getInventory().setContents(inventory);
+        }
+
+        if(config.getSwapSetting(SwapAttribute.PotionEffects)) {
+            // Remove all potion effects
+            for (PotionEffect effect : otherPlayer.getActivePotionEffects()) {
+                otherPlayer.removePotionEffect(effect.getType());
+            }
+            otherPlayer.addPotionEffects(potionEffects);
+        }
 
         otherPlayer.playSound(otherPlayer, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 0.5f);
     }
 
     public String getPlayerName() {
-        return playerName;
+        return player.getName();
     }
 }
