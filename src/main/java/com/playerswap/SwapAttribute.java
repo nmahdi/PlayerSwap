@@ -1,5 +1,7 @@
 package com.playerswap;
 
+import javax.annotation.Nullable;
+
 public enum SwapAttribute {
     Health(0, "health"),
     Hunger(1, "hunger"),
@@ -24,5 +26,15 @@ public enum SwapAttribute {
 
     public String getConfigValue() {
         return configValue;
+    }
+
+    @Nullable
+    public static SwapAttribute fromConfigValue(String configValue) {
+        for(SwapAttribute attribute : SwapAttribute.values()){
+            if(attribute.getConfigValue().equalsIgnoreCase(configValue)) {
+                return attribute;
+            }
+        }
+        return null;
     }
 }

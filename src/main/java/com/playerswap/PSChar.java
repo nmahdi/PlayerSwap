@@ -5,7 +5,6 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.util.Vector;
@@ -20,19 +19,18 @@ public class PSChar {
     private final float saturation;
     private final Location location;
     private final ItemStack[] inventory;
-    private final Inventory topInventory;
     private final Collection<PotionEffect> potionEffects;
     private Entity vehicle;
     private final Vector velocity;
 
     public PSChar(Player player) {
         this.player = player;
+        player.closeInventory();
         this.health = player.getHealth();
         this.foodLevel = player.getFoodLevel();
         this.saturation = player.getSaturation();
         this.location = player.getLocation();
         this.inventory = player.getInventory().getContents();
-        this.topInventory = player.getOpenInventory().getTopInventory();
         this.potionEffects = player.getActivePotionEffects();
         if(player.isInsideVehicle()) {
             this.vehicle = player.getVehicle();
@@ -60,18 +58,6 @@ public class PSChar {
         World world = otherPlayer.getWorld();
 
         if(config.getSwapSetting(SwapAttribute.Location)) {
-            // If the original player had a top inventory open, close their inventory then drop
-            // the items from the top inventory in the world.
-//            if(topInventory.length != 0) {
-//                player.closeInventory();
-//                for(ItemStack stack : topInventory) {
-//                    world.dropItem(player.getLocation(), stack);
-//                }
-//            }
-            player.closeInventory();
-            otherPlayer.openInventory(topInventory);
-
-
             // If vehicle is null then teleport the player. If not, teleport the vehicle.
             if(vehicle == null) {
                 otherPlayer.teleport(location);
@@ -80,8 +66,8 @@ public class PSChar {
                 // Make the original player exist vehicle, then teleport the vehicle & new player,
                 // then make the new player enter the vehicle & apply vehicle's velocity.
                 player.leaveVehicle();
-                vehicle.teleport(location.add(0, 0.5d, 0));
-                otherPlayer.teleport(vehicle);
+                vehicle.teleport(otherPlayer.getLocation().add(0, 0.5d, 0));
+                otherPlayer.teleport(vehicle.getLocation().add(0, 0.5d, 0));
                 vehicle.addPassenger(otherPlayer);
                 vehicle.setVelocity(velocity);
             }
@@ -110,7 +96,7 @@ public class PSChar {
             otherPlayer.addPotionEffects(potionEffects);
         }
 
-        otherPlayer.playSound(otherPlayer, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 0.5f, 0.5f);
+        otherPlayer.playSound(otherPlayer, config.getSoundEffect(), config.getSoundVolume(), config.getSoundPitch());
     }
 
     public String getPlayerName() {

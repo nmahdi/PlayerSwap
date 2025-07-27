@@ -30,8 +30,7 @@ public class PSConfig {
     private final boolean[] toSWAP = new boolean[8];
 
     private Sound soundEffect;
-    private double soundVolume;
-    private double soundPitch;
+    private float soundVolume, soundPitch;
 
     private String swapFormat;
     private final ArrayList<String> swapMessage = new ArrayList<>();
@@ -94,16 +93,16 @@ public class PSConfig {
         }
 
         if(config.contains(SOUND_VOLUME)) {
-            soundVolume = config.getDouble(SOUND_VOLUME);
+            soundVolume = (float)config.getDouble(SOUND_VOLUME);
         }else{
-            soundVolume = 0.5d;
+            soundVolume = 0.5f;
             sendDefaultMsg(SOUND_VOLUME);
         }
 
         if(config.contains(SOUND_PITCH)) {
-            soundPitch = config.getDouble(SOUND_PITCH);
+            soundPitch = (float)config.getDouble(SOUND_PITCH);
         }else{
-            soundPitch = 0.5d;
+            soundPitch = 0.5f;
             sendDefaultMsg(SOUND_PITCH);
         }
 
@@ -160,15 +159,15 @@ public class PSConfig {
         return soundEffect;
     }
 
-    public double getSoundVolume() {
+    public float getSoundVolume() {
         return soundVolume;
     }
 
-    public double getSoundPitch() {
+    public float getSoundPitch() {
         return soundPitch;
     }
 
-    public void setSoundEffect(Sound soundEffect, double soundVolume, double soundPitch) {
+    public void setSoundEffect(Sound soundEffect, float soundVolume, float soundPitch) {
         this.soundEffect = soundEffect;
         this.soundVolume = soundVolume;
         this.soundPitch = soundPitch;
@@ -188,10 +187,6 @@ public class PSConfig {
 
     public String getSwapFormat() {
         return swapFormat;
-    }
-
-    public void setSwapFormat(String swapFormat) {
-        this.swapFormat = swapFormat;
     }
 
     public ArrayList<String> getSwapMessage() {

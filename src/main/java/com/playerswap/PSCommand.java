@@ -33,14 +33,6 @@ public class PSCommand implements TabExecutor {
             this.name = arg;
             this.desc = desc;
         }
-
-        public String getName() {
-            return name;
-        }
-
-        public String getDesc() {
-            return desc;
-        }
     }
 
     public PSCommand(PlayerSwap main, PSManager swapManager) {
@@ -97,7 +89,7 @@ public class PSCommand implements TabExecutor {
                         break;
                     }
 
-                    changeSound(sender, args[1], Double.parseDouble(args[2]), Double.parseDouble(args[3]));
+                    changeSound(sender, args[1], Float.parseFloat(args[2]), Float.parseFloat(args[3]));
                     break;
                 }
 
@@ -139,9 +131,60 @@ public class PSCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         ArrayList<String> toReturn = new ArrayList<>();
 
-        if(args.length == 1) {
+        if(args.length < 1) {
             for(ValidArgs arg : ValidArgs.values()) {
                 toReturn.add(arg.name);
+            }
+            return toReturn;
+        }else{
+            if(args[0].equalsIgnoreCase("settings")) {
+
+                switch(args.length) {
+                    case 2: {
+                        for(SwapAttribute swapAttribute : SwapAttribute.values()) {
+                            toReturn.add(swapAttribute.getConfigValue());
+                        }
+                        break;
+                    }
+                    case 3:
+                }
+
+                return toReturn;
+
+            }else if(args[1].equalsIgnoreCase("sound")) {
+                for(Sound sound : Sound.values()) {
+                    toReturn.add(sound.name());
+                }
+            }
+        }
+
+        switch(args.length) {
+            case 1: {
+
+                break;
+            }
+
+            case 2: {
+
+                if(args[0].equalsIgnoreCase("settings")) {
+
+                } else if (args[0].equalsIgnoreCase("sound")) {
+
+                }
+                break;
+            }
+
+            case 3: {
+                if (args[0].equalsIgnoreCase("settings")) {
+
+                }
+
+                SwapAttribute attribute = SwapAttribute.fromConfigValue(args[1]);
+                if(attribute != null) {
+                    toReturn.add("true");
+                    toReturn.add("false");
+                }
+                break;
             }
         }
 
@@ -172,16 +215,17 @@ public class PSCommand implements TabExecutor {
         }
     }
 
-    private void toggleSetting(CommandSender sender, String setting, boolean value) {
-        try{
-            psConfig.setSwapSetting(SwapAttribute.valueOf(setting), value);
-        } catch(IllegalArgumentException e) {
+    private void toggleSetting(CommandSender sender, String swapAttribute, boolean value) {
+        SwapAttribute attribute = SwapAttribute.fromConfigValue(swapAttribute);
+        if(attribute == null) {
             sender.sendMessage(ChatColor.GRAY +
                     "/playerswap settings [health:hunger:saturation:location:inventory:potion-effects:vehicle:velocity] [true:false]");
+            return;
         }
+        psConfig.setSwapSetting(attribute, value);
     }
 
-    private void changeSound(CommandSender sender, String effect, double volume, double pitch) {
+    private void changeSound(CommandSender sender, String effect, float volume, float pitch) {
         try {
             psConfig.setSoundEffect(Sound.valueOf(effect), volume, pitch);
         }catch(IllegalArgumentException e) {

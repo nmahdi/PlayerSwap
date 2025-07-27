@@ -2,9 +2,9 @@ main: com.playerswap.PlayerSwap
 name: PlayerSwap
 version: '1.0'
 description: 'A simple player swapping plugin.'
-author: nmahdi
+author: 'nmahdi - https://github.com/nmahdi'
 commands:
   playerswap:
-    description: 'Toggles swapping.'
+    description: 'Primary admin command. Run /ps for more details.'
     aliases: ps
     permission: playerswap.admin
