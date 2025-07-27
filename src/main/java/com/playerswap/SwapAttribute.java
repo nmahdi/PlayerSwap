@@ -6,11 +6,14 @@ public enum SwapAttribute {
     Health(0, "health"),
     Hunger(1, "hunger"),
     Saturation(2, "saturation"),
-    Location(3, "location"),
-    Inventory(4, "inventory"),
-    PotionEffects(5, "potion-effects"),
-    Vehicle(6, "vehicle"),
-    Velocity(7, "velocity");
+    AirBubbles(3, "air-bubbles"),
+    FireTicks(4, "fire-ticks"),
+    Location(5, "location"),
+    Inventory(6, "inventory"),
+    PotionEffects(7, "potion-effects"),
+    Vehicle(8, "vehicle"),
+    Velocity(9, "velocity"),
+    EnderPearl(10, "ender-pearl");
 
     private final int index;
     private final String configValue;

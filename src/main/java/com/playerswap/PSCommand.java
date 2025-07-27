@@ -21,10 +21,12 @@ public class PSCommand implements TabExecutor {
         Max("max", "[time in seconds] - Sets the maximum amount of time between swaps"),
         Settings("settings", "[setting configName] [true:false] - Toggles the following"),
         Sound("sound", "[effect name] [volume] [pitch] - Changes the volume played when swapping"),
+        Info("info", "- Displays all current settings."),
         Reload("reload", "- Reloads all values from 'config.yml'"),
         Players("players", "- Displays the amount of players vs available template copies [DEBUG]"),
         Chunks("chunks", "- Displays the amount of chunks currently loaded by the plugin [DEBUG]"),
-        Run("run", "- Initiates a single swap [DEBUG]")
+        Run("run", "- Initiates a single swap [DEBUG]"),
+        Cancel("cancel", "- Cancels active swaps.")
         ;
 
         private final String name, desc;
@@ -71,6 +73,7 @@ public class PSCommand implements TabExecutor {
                         break;
                     }
                     changeMaxDelay(sender, args[1]);
+                    break;
                 }
 
                 case "settings": {
@@ -93,8 +96,14 @@ public class PSCommand implements TabExecutor {
                     break;
                 }
 
+                case "info": {
+                    sendInfo(sender);
+                    break;
+                }
+
                 case "reload": {
                     psConfig.loadConfig();
+                    psManager.loadPlayers();
                     sender.sendMessage(ChatColor.GREEN + psManager.PREFIX + "Config has been reloaded.");
                     break;
                 }
@@ -111,6 +120,11 @@ public class PSCommand implements TabExecutor {
 
                 case "run": {
                     psManager.swap(sender);
+                    break;
+                }
+
+                case "cancel": {
+                    psManager.cancelSwap();
                     break;
                 }
 
@@ -131,8 +145,11 @@ public class PSCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
         ArrayList<String> toReturn = new ArrayList<>();
 
-        if(args.length < 1) {
+        if(args.length < 2) {
             for(ValidArgs arg : ValidArgs.values()) {
+                if(!args[0].isEmpty() && !arg.name.startsWith(args[0])) {
+                    continue;
+                }
                 toReturn.add(arg.name);
             }
             return toReturn;
@@ -140,51 +157,39 @@ public class PSCommand implements TabExecutor {
             if(args[0].equalsIgnoreCase("settings")) {
 
                 switch(args.length) {
+                    // ps settings
                     case 2: {
                         for(SwapAttribute swapAttribute : SwapAttribute.values()) {
+                            // If the 2nd argument is not empty && it does not start with any the attribute config value, then skip & continue looping
+                            if(!args[1].isEmpty() && !swapAttribute.getConfigValue().startsWith(args[1])) {
+                                continue;
+                            }
+
                             toReturn.add(swapAttribute.getConfigValue());
                         }
                         break;
                     }
-                    case 3:
+                    // ps settings [setting name]
+                    case 3: {
+                        SwapAttribute attribute = SwapAttribute.fromConfigValue(args[1]);
+                        if(attribute != null) {
+                            toReturn.add("true");
+                            toReturn.add("false");
+                        }
+                        break;
+                    }
                 }
 
                 return toReturn;
 
-            }else if(args[1].equalsIgnoreCase("sound")) {
+            }else if(args[0].equalsIgnoreCase("sound") && args.length == 2) {
                 for(Sound sound : Sound.values()) {
+                    // If the 2nd argument is not empty && it does not start with any proper sound effect value, then skip & continue looping
+                    if(!args[1].isEmpty() && !sound.name().startsWith(args[1])){
+                        continue;
+                    }
                     toReturn.add(sound.name());
                 }
-            }
-        }
-
-        switch(args.length) {
-            case 1: {
-
-                break;
-            }
-
-            case 2: {
-
-                if(args[0].equalsIgnoreCase("settings")) {
-
-                } else if (args[0].equalsIgnoreCase("sound")) {
-
-                }
-                break;
-            }
-
-            case 3: {
-                if (args[0].equalsIgnoreCase("settings")) {
-
-                }
-
-                SwapAttribute attribute = SwapAttribute.fromConfigValue(args[1]);
-                if(attribute != null) {
-                    toReturn.add("true");
-                    toReturn.add("false");
-                }
-                break;
             }
         }
 
@@ -194,6 +199,22 @@ public class PSCommand implements TabExecutor {
     private void sendSyntax(CommandSender sender) {
         for(ValidArgs arg : ValidArgs.values()) {
             sender.sendMessage(ChatColor.GRAY + "/playerswap " + arg.name + " " + arg.desc);
+        }
+    }
+
+    private void sendInfo(CommandSender sender) {
+        sender.sendMessage(ChatColor.GREEN + "Delay Time: " + psConfig.getMinDelay() + " -> " + psConfig.getMaxDelay() + " seconds.");
+        sender.sendMessage(ChatColor.GREEN + "Swappable:");
+        for(SwapAttribute attribute : SwapAttribute.values()) {
+            sender.sendMessage(ChatColor.GREEN + attribute.getConfigValue() + ": " +
+                    (psConfig.getSwapSetting(attribute) ? ChatColor.DARK_GREEN + "True" : ChatColor.DARK_RED + "False"));
+        }
+
+        sender.sendMessage(ChatColor.GREEN + "Sound: " + psConfig.getSoundEffect().name() + ". Volume: " + psConfig.getSoundVolume() + ". Pitch: " + psConfig.getSoundPitch());
+        sender.sendMessage(ChatColor.GREEN + "Swap Format: " + psConfig.getSwapFormat());
+        sender.sendMessage(ChatColor.GREEN + "Swap Message:");
+        for(String line : psConfig.getSwapMessage()) {
+            sender.sendMessage(ChatColor.GREEN + "- '" + line + "'");
         }
     }
 
@@ -223,11 +244,13 @@ public class PSCommand implements TabExecutor {
             return;
         }
         psConfig.setSwapSetting(attribute, value);
+        sender.sendMessage(ChatColor.GREEN + psManager.PREFIX + "Toggled '" + swapAttribute + "' to " + value);
     }
 
     private void changeSound(CommandSender sender, String effect, float volume, float pitch) {
         try {
             psConfig.setSoundEffect(Sound.valueOf(effect), volume, pitch);
+            sender.sendMessage(ChatColor.GREEN + psManager.PREFIX + "Set sound to '" + effect + "'. Volume: " + volume + ". Pitch: " + pitch);
         }catch(IllegalArgumentException e) {
             sender.sendMessage(ChatColor.GRAY + "/sound [effect name] [volume] [pitch]");
         }

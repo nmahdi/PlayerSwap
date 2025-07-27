@@ -12,11 +12,13 @@ import java.util.Objects;
 
 public class PSConfig {
 
+    // 'config.yml' keys
     private final String MIN_DELAY = "min-delay";
     private final String MAX_DELAY = "max-delay";
     private final String SWAP_FORMAT = "swap-format";
     private final String SWAP_MESSAGE = "swap-message";
     private final String SWAP_SETTINGS = "swap.";
+    private final String SOUND_ENABLED = "swap.enabled";
     private final String SOUND_NAME = "swap-sound.name";
     private final String SOUND_VOLUME = "swap-sound.volume";
     private final String SOUND_PITCH = "swap-sound.pitch";
@@ -25,13 +27,11 @@ public class PSConfig {
     private final File file;
     private FileConfiguration config;
 
+    // Config settings
     private double minDelay, maxDelay;
-
-    private final boolean[] toSWAP = new boolean[8];
-
+    private final boolean[] toSWAP = new boolean[11];
     private Sound soundEffect;
     private float soundVolume, soundPitch;
-
     private String swapFormat;
     private final ArrayList<String> swapMessage = new ArrayList<>();
 
@@ -83,27 +83,30 @@ public class PSConfig {
 
             toSWAP[attribute.getIndex()] = config.getBoolean(SWAP_SETTINGS + attribute.getConfigValue());
         }
-
         // Swap sound
-        if(config.contains(SOUND_NAME)) {
-            soundEffect = Sound.valueOf(config.getString(SOUND_NAME));
-        }else{
-            soundEffect = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
-            sendDefaultMsg(SOUND_NAME);
-        }
+        if(config.contains(SOUND_ENABLED) && config.getBoolean(SOUND_ENABLED)) {
 
-        if(config.contains(SOUND_VOLUME)) {
-            soundVolume = (float)config.getDouble(SOUND_VOLUME);
-        }else{
-            soundVolume = 0.5f;
-            sendDefaultMsg(SOUND_VOLUME);
-        }
+            if(config.contains(SOUND_NAME)) {
+                soundEffect = Sound.valueOf(config.getString(SOUND_NAME));
+            }else{
+                soundEffect = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
+                sendDefaultMsg(SOUND_NAME);
+            }
 
-        if(config.contains(SOUND_PITCH)) {
-            soundPitch = (float)config.getDouble(SOUND_PITCH);
-        }else{
-            soundPitch = 0.5f;
-            sendDefaultMsg(SOUND_PITCH);
+            if(config.contains(SOUND_VOLUME)) {
+                soundVolume = (float)config.getDouble(SOUND_VOLUME);
+            }else{
+                soundVolume = 0.5f;
+                sendDefaultMsg(SOUND_VOLUME);
+            }
+
+            if(config.contains(SOUND_PITCH)) {
+                soundPitch = (float)config.getDouble(SOUND_PITCH);
+            }else{
+                soundPitch = 0.5f;
+                sendDefaultMsg(SOUND_PITCH);
+            }
+
         }
 
         // Swap format
@@ -154,6 +157,8 @@ public class PSConfig {
         config.set(SWAP_SETTINGS + attribute.getConfigValue(), value);
         saveConfig();
     }
+
+    public boolean isSoundEnabled() { return soundEffect != null; }
 
     public Sound getSoundEffect() {
         return soundEffect;

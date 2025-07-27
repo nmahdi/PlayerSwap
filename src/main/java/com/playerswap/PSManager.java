@@ -4,10 +4,13 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EnderPearl;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -21,16 +24,7 @@ public class PSManager implements Listener {
 
     /*
      * TO DO:
-     *      - Create a system for keeping the swapping enabled when dying & respawning with 2 people.
-     * TO TEST:
-     *      - Top inventory view dropping items
-     *      - Remove swapping from currently dead players
-     *      - Teleport entities that are attached to players like boats, pigs, horses
-     *      - New config settings (swap-settings)
-     *      - Spamming /ps run
-     *      - ps settings/sound
-     * INTENTIONAL FEATURES:
-     *      - A player can throw an ender pearl before they swap, and will get teleported again when their ender pearl lands
+     *      - If vehicle config is false, make it so players that get swapped ontop of a vehicle are riding said vehicle.
      * */
 
     private final PlayerSwap main;
@@ -43,6 +37,7 @@ public class PSManager implements Listener {
 
     public final ArrayList<Player> PLAYERS = new ArrayList<>();
     public final ArrayList<Chunk> LOADED_CHUNKS = new ArrayList<>();
+    public final ArrayList<EnderPearl> THROWN_PEARLS = new ArrayList<>();
 
     public final String PREFIX = "[PlayerSwap] ";
 
@@ -54,6 +49,10 @@ public class PSManager implements Listener {
 
     // Toggles the swap mode on/off
     public void toggleSwap(CommandSender sender) {
+        if(singleSwap) {
+            sender.sendMessage(ChatColor.RED + PREFIX + "A swap has already been initiated.");
+            return;
+        }
         if(!swapToggle) {
 
             if(PLAYERS.size() < 2) {
@@ -109,32 +108,38 @@ public class PSManager implements Listener {
                     index++;
                 }
 
-                // Shuffle the saved snapshots
-                ArrayList<PSChar> shuffled = new ArrayList<>(chars);
-                validateShuffle(chars, shuffled);
+                // Proceed with swap as long as there are more than 2 valid people to swap
+                if(chars.size() >= 2) {
+                    // Shuffle the saved snapshots
+                    ArrayList<PSChar> shuffled = new ArrayList<>(chars);
+                    validateShuffle(chars, shuffled);
 
-                // Print swap message & replace placeholders
-                int swapIndex = 0;
-                for(String s : config.getSwapMessage()) {
-                    if(s.contains("%msg%")) break; // Break early if it's the player's message.
-                    Bukkit.broadcastMessage(s.replaceAll("%delay%", String.format("%.2f", delay)));
-                    swapIndex++;
-                }
+                    // Print swap message & replace placeholders
+                    int swapIndex = 0;
+                    for(String s : config.getSwapMessage()) {
+                        if(s.contains("%msg%")) break; // Break early if it's the player's message.
+                        Bukkit.broadcastMessage(s.replaceAll("%delay%", String.format("%.2f", delay)));
+                        swapIndex++;
+                    }
 
-                index = 0;
-                // Apply all the saved information to the new Player
-                for(Player currentPlayer : PLAYERS) {
-                    chars.get(index).applyTo(config, currentPlayer);
+                    index = 0;
+                    // Apply all the saved information to the new Player
+                    for(Player currentPlayer : PLAYERS) {
+                        chars.get(index).applyTo(config, THROWN_PEARLS, currentPlayer);
 
-                    Bukkit.broadcastMessage(config.getSwapFormat().replaceAll("%original%",currentPlayer.getName())
-                            .replaceAll("%new%", chars.get(index).getPlayerName()));
+                        Bukkit.broadcastMessage(config.getSwapFormat().replaceAll("%original%",currentPlayer.getName())
+                                .replaceAll("%new%", chars.get(index).getPlayerName()));
 
-                    index++;
-                }
+                        index++;
+                    }
 
-                // Print the rest of the swap message.
-                for(int i = swapIndex+1; i < config.getSwapMessage().size(); i++) {
-                    Bukkit.broadcastMessage(config.getSwapMessage().get(i).replaceAll("%delay%", String.format("%.2f", delay)));
+                    // Print the rest of the swap message.
+                    for(int i = swapIndex+1; i < config.getSwapMessage().size(); i++) {
+                        Bukkit.broadcastMessage(config.getSwapMessage().get(i).replaceAll("%delay%", String.format("%.2f", delay)));
+                    }
+
+                }else{
+                    System.out.println("A swap was attempted with less than 2 people.");
                 }
 
                 // Remove all the chunk tickets & clear LOADED_CHUNKS
@@ -157,34 +162,50 @@ public class PSManager implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
-        addPlayer(e.getPlayer());
+        PLAYERS.add(e.getPlayer());
     }
 
     @EventHandler
     public void onLeave(PlayerQuitEvent e) {
-        removePlayer(e.getPlayer());
-        // Automatically disables swap mode when all players leave
-        if(e.getPlayer().getServer().getOnlinePlayers().size() == 2) {
-            swapToggle = false;
-            currentTask.cancel();
+        PLAYERS.remove(e.getPlayer());
+        // Automatically disables swap mode when only one person is left connected
+        if(PLAYERS.size() < 2) {
+            cancelSwap();
             System.out.println("Swapping has been disabled since there is less than 2 people on.");
         }
     }
 
     @EventHandler
+    public void onRespawn(PlayerRespawnEvent e) {
+        PLAYERS.add(e.getPlayer());
+    }
+
+    @EventHandler
     public void onDeath(PlayerDeathEvent e) {
-        removePlayer(e.getEntity());
-        // Automatically disables swap mode when all players leave
-        if(e.getEntity().getServer().getOnlinePlayers().size() == 2) {
-            swapToggle = false;
-            currentTask.cancel();
+        PLAYERS.remove(e.getEntity());
+        // Automatically disables swap mode when only 1 player is left alive
+        if(PLAYERS.size() < 2) {
+            cancelSwap();
             System.out.println("Swapping has been disabled since there is less than 2 people alive.");
         }
     }
 
     @EventHandler
-    public void onRespawn(PlayerRespawnEvent e) {
-        addPlayer(e.getPlayer());
+    public void onPearlThrow(ProjectileLaunchEvent e) {
+        // Return early it wasn't a player throwing a projectile
+        if(!(e.getEntity().getShooter() instanceof Player)) return;
+        if(e.getEntity() instanceof EnderPearl pearl) {
+            THROWN_PEARLS.add(pearl);
+        }
+    }
+
+    @EventHandler
+    public void onPearlLand(ProjectileHitEvent e) {
+        // Return early it wasn't a player throwing a projectile
+        if(!(e.getEntity().getShooter() instanceof Player)) return;
+        if(e.getEntity() instanceof EnderPearl pearl) {
+            THROWN_PEARLS.remove(pearl);
+        }
     }
 
     // Ensures the shuffle is not the same as the original
@@ -194,16 +215,6 @@ public class PSManager implements Listener {
         } while (original.equals(shuffled));
         original.clear();
         original.addAll(shuffled);
-    }
-
-    // Adds an empty PSChar object to the list
-    private void addPlayer(Player player) {
-        PLAYERS.add(player);
-    }
-
-    // Removes the last PSChar object from the list
-    private void removePlayer(Player player) {
-        PLAYERS.remove(player);
     }
 
     // Adds a chunk ticket to the 5x5 chunks around (including) the provided chunk
@@ -217,6 +228,18 @@ public class PSManager implements Listener {
                 }
             }
         }
+    }
+
+    // Cancels active swaps.
+    public void cancelSwap() {
+        swapToggle = false;
+        singleSwap = false;
+        currentTask.cancel();
+    }
+
+    // Loads all currently online players into the PLAYERS array list
+    public void loadPlayers() {
+        PLAYERS.addAll(Bukkit.getServer().getOnlinePlayers());
     }
 
     public PSConfig getConfig() {
