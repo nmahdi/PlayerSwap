@@ -12,6 +12,10 @@ Attributes:
 - Vehicles
 - Ender Pearl Owners
 
+**Known Issues**
+- When swapping, entities sometimes don't update on the client side when there is a mob as a passanger in vehicles.
+- Location swapping when two people are in a boat is currently bugged. It will not teleport anyone in that boat.
+
 **Config.yml**
 ```
 # The minimum & maximum amount of time a swap can happen.
