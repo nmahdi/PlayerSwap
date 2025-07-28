@@ -1,4 +1,4 @@
-Takes a snapshot of all online player's stats/attributes & randomly applies them to other players. Effectively swapping them completely.
+Takes a snapshot of all online player's stats/attributes & randomly applies them to other players. Effectively swapping the players completely.
 The plugin is highly customizable with every feature being togglable both ingame and within 'config.yml'
 
 -----------------------------------------------
