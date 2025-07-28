@@ -18,7 +18,7 @@ public class PSConfig {
     private final String SWAP_FORMAT = "swap-format";
     private final String SWAP_MESSAGE = "swap-message";
     private final String SWAP_SETTINGS = "swap.";
-    private final String SOUND_ENABLED = "swap.enabled";
+    private final String SOUND_ENABLED = "swap-sound.enabled";
     private final String SOUND_NAME = "swap-sound.name";
     private final String SOUND_VOLUME = "swap-sound.volume";
     private final String SOUND_PITCH = "swap-sound.pitch";
@@ -60,6 +60,10 @@ public class PSConfig {
         // Minimum delay
         if (config.contains(MIN_DELAY)) {
             minDelay = config.getDouble(MIN_DELAY);
+            // Clamp value down to 1, to avoid lag
+            if(minDelay < 1) {
+                minDelay = 1;
+            }
         } else {
             minDelay = 5d;
             sendDefaultMsg(MIN_DELAY);

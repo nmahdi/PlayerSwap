@@ -19,7 +19,7 @@ public class PSCommand implements TabExecutor {
         Toggle("toggle", "- Toggles swapping on/off continuously"),
         Min("min", "[time in seconds] - Sets the minimum amount of time between swaps"),
         Max("max", "[time in seconds] - Sets the maximum amount of time between swaps"),
-        Settings("settings", "[setting configName] [true:false] - Toggles the following"),
+        Settings("settings", "[setting configName] [true:false] - Toggles the specified setting"),
         Sound("sound", "[effect name] [volume] [pitch] - Changes the volume played when swapping"),
         Info("info", "- Displays all current settings."),
         Reload("reload", "- Reloads all values from 'config.yml'"),
@@ -153,43 +153,43 @@ public class PSCommand implements TabExecutor {
                 toReturn.add(arg.name);
             }
             return toReturn;
-        }else{
-            if(args[0].equalsIgnoreCase("settings")) {
+        }
 
-                switch(args.length) {
-                    // ps settings
-                    case 2: {
-                        for(SwapAttribute swapAttribute : SwapAttribute.values()) {
-                            // If the 2nd argument is not empty && it does not start with any the attribute config value, then skip & continue looping
-                            if(!args[1].isEmpty() && !swapAttribute.getConfigValue().startsWith(args[1])) {
-                                continue;
-                            }
+        if(args[0].equalsIgnoreCase("settings")) {
 
-                            toReturn.add(swapAttribute.getConfigValue());
+            switch(args.length) {
+                // ps settings
+                case 2: {
+                    for(SwapAttribute swapAttribute : SwapAttribute.values()) {
+                        // If the 2nd argument is not empty && it does not start with any the attribute config value, then skip & continue looping
+                        if(!args[1].isEmpty() && !swapAttribute.getConfigValue().startsWith(args[1])) {
+                            continue;
                         }
-                        break;
-                    }
-                    // ps settings [setting name]
-                    case 3: {
-                        SwapAttribute attribute = SwapAttribute.fromConfigValue(args[1]);
-                        if(attribute != null) {
-                            toReturn.add("true");
-                            toReturn.add("false");
-                        }
-                        break;
-                    }
-                }
 
-                return toReturn;
-
-            }else if(args[0].equalsIgnoreCase("sound") && args.length == 2) {
-                for(Sound sound : Sound.values()) {
-                    // If the 2nd argument is not empty && it does not start with any proper sound effect value, then skip & continue looping
-                    if(!args[1].isEmpty() && !sound.name().startsWith(args[1])){
-                        continue;
+                        toReturn.add(swapAttribute.getConfigValue());
                     }
-                    toReturn.add(sound.name());
+                    break;
                 }
+                // ps settings [setting name]
+                case 3: {
+                    SwapAttribute attribute = SwapAttribute.fromConfigValue(args[1]);
+                    if(attribute != null) {
+                        toReturn.add("true");
+                        toReturn.add("false");
+                    }
+                    break;
+                }
+            }
+
+            return toReturn;
+
+        }else if(args[0].equalsIgnoreCase("sound") && args.length == 2) {
+            for(Sound sound : Sound.values()) {
+                // If the 2nd argument is not empty && it does not start with any proper sound effect value, then skip & continue looping
+                if(!args[1].isEmpty() && !sound.name().startsWith(args[1])){
+                    continue;
+                }
+                toReturn.add(sound.name());
             }
         }
 
@@ -198,7 +198,7 @@ public class PSCommand implements TabExecutor {
 
     private void sendSyntax(CommandSender sender) {
         for(ValidArgs arg : ValidArgs.values()) {
-            sender.sendMessage(ChatColor.GRAY + "/playerswap " + arg.name + " " + arg.desc);
+            sender.sendMessage(ChatColor.WHITE + "/playerswap " + arg.name + " " + ChatColor.GRAY + arg.desc);
         }
     }
 
@@ -209,18 +209,25 @@ public class PSCommand implements TabExecutor {
             sender.sendMessage(ChatColor.GREEN + attribute.getConfigValue() + ": " +
                     (psConfig.getSwapSetting(attribute) ? ChatColor.DARK_GREEN + "True" : ChatColor.DARK_RED + "False"));
         }
-
-        sender.sendMessage(ChatColor.GREEN + "Sound: " + psConfig.getSoundEffect().name() + ". Volume: " + psConfig.getSoundVolume() + ". Pitch: " + psConfig.getSoundPitch());
+        if(psConfig.isSoundEnabled()) {
+            sender.sendMessage(ChatColor.GREEN + "Sound: " + psConfig.getSoundEffect().name() + ". Volume: " + psConfig.getSoundVolume() + ". Pitch: " + psConfig.getSoundPitch());
+        }else{
+            sender.sendMessage(ChatColor.GREEN + "Sound: Disabled");
+        }
         sender.sendMessage(ChatColor.GREEN + "Swap Format: " + psConfig.getSwapFormat());
         sender.sendMessage(ChatColor.GREEN + "Swap Message:");
         for(String line : psConfig.getSwapMessage()) {
-            sender.sendMessage(ChatColor.GREEN + "- '" + line + "'");
+            sender.sendMessage(ChatColor.GREEN + "- '" + line + ChatColor.GREEN + "'");
         }
     }
 
     private void changeMinDelay(CommandSender sender, String delay){
         try {
-            psConfig.setMinDelay(Double.parseDouble(delay));
+            double minDelay = Double.parseDouble(delay);
+            if(minDelay < 1) {
+                minDelay = 1;
+            }
+            psConfig.setMinDelay(minDelay);
             sender.sendMessage(ChatColor.GREEN + psManager.PREFIX + "Minimum delay is now: " + delay + " seconds.");
         }catch (NumberFormatException e) {
             sender.sendMessage(ChatColor.RED + "'" + delay + "' is not a valid number.");
