@@ -1,8 +1,11 @@
-**WARNING:** This is a survival/pvp plugin meant for small servers with friends. It is not intended for any commercial servers.
+**WARNING:** This is a survival/pvp plugin meant for small scale servers with friends. It is not intended for any large or commercial servers. (Use at your own risk)
 
 **Features**
-Takes a snapshot of all online player's stats/attributes & randomly applies them to other players.
-Attributes:
+
+Takes a snapshot of all online player's stats/attributes & randomly applies them to other players. Effectively swapping them completely.
+The plugin is highly customizable with every feature being togglable both ingame and within 'config.yml'
+
+Swappable Attributes:
 - Health
 - Hunger & Saturation
 - Air Bubbles & Fire Ticks
