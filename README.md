@@ -1,9 +1,7 @@
-**WARNING:** This is a survival/pvp plugin meant for small scale servers with friends. It is not intended for any large or commercial servers. (Use at your own risk)
-
-**Features**
-
 Takes a snapshot of all online player's stats/attributes & randomly applies them to other players. Effectively swapping them completely.
 The plugin is highly customizable with every feature being togglable both ingame and within 'config.yml'
+
+-----------------------------------------------
 
 **Swappable Attributes:**
 - Health
@@ -15,11 +13,16 @@ The plugin is highly customizable with every feature being togglable both ingame
 - Vehicles
 - Ender Pearl Owners
 
+-----------------------------------------------
+
 **Known Issues**
 - When swapping, entities sometimes don't update on the client side when there is a mob as a passanger in vehicles.
 - Location swapping when two people are in a boat is currently bugged. It will not teleport anyone in that boat.
 
+-----------------------------------------------
+
 **Commands**
+
 The main command which controls everything is '/playerswap' or '/ps'.
 | Arguments | Description |
 | -------- |-------------| 
@@ -35,8 +38,12 @@ The main command which controls everything is '/playerswap' or '/ps'.
 | run | [DEBUG] Initiates a single swap |
 | cancel | Cancels & turns off any initiated swap.
 
-**Video Example**
+-----------------------------------------------
+
+**Basic Demonstration:**
 https://www.youtube.com/watch?v=sLKzmdYzKnI
+
+-----------------------------------------------
 
 **Config.yml**
 ```
@@ -89,5 +96,8 @@ swap-message:
   - '&e&l----------------------------'
 
 ```
+-------------------------------------------
+
+**WARNING:** This is a survival/pvp plugin meant for small scale servers with friends. It is not intended for any large or commercial servers. (Use at your own risk)
 
 The idea for plugin came from this Youtube short by ThirtyVirus: https://www.youtube.com/shorts/ODs75LhTxLs
