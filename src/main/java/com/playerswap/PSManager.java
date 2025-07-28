@@ -234,7 +234,9 @@ public class PSManager implements Listener {
     public void cancelSwap() {
         swapToggle = false;
         singleSwap = false;
-        currentTask.cancel();
+        if(currentTask != null ) {
+            currentTask.cancel();
+        }
     }
 
     // Loads all currently online players into the PLAYERS array list
