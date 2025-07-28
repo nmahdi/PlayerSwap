@@ -5,7 +5,7 @@
 Takes a snapshot of all online player's stats/attributes & randomly applies them to other players. Effectively swapping them completely.
 The plugin is highly customizable with every feature being togglable both ingame and within 'config.yml'
 
-Swappable Attributes:
+**Swappable Attributes:**
 - Health
 - Hunger & Saturation
 - Air Bubbles & Fire Ticks
@@ -18,6 +18,25 @@ Swappable Attributes:
 **Known Issues**
 - When swapping, entities sometimes don't update on the client side when there is a mob as a passanger in vehicles.
 - Location swapping when two people are in a boat is currently bugged. It will not teleport anyone in that boat.
+
+**Commands**
+The main command which controls everything is '/playerswap' or '/ps'.
+| Arguments | Description |
+| -------- |-------------| 
+| toggle   | Toggles swapping on/off continuously.|
+| min [value] | Sets the minimum amount of time between swaps.|
+| max [value] | Sets the maximum amount of time between swaps.|
+| settings [setting] [true/false] |Toggles the specified setting.|
+| sound [effect] [volume] [pitch] | Changes the volume played when swapping.|
+| info | Displays all values from config.yml |
+| reload | Reloads all values from config.yml |
+| players | [DEBUG] Allows you to view the amount of players ready to swap. This is used to ensure the amount of people online & people ready to be swapped are synced.|
+| chunks | [DEBUG] Displays how many chunks are loaded by the plugin at one time. This should always be zero after a swap.|
+| run | [DEBUG] Initiates a single swap |
+| cancel | Cancels & turns off any initiated swap.
+
+**Video Example**
+https://www.youtube.com/watch?v=sLKzmdYzKnI
 
 **Config.yml**
 ```
