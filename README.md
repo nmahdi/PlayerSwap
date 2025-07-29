@@ -23,7 +23,8 @@ The plugin is highly customizable with every feature being togglable both ingame
 
 **Commands**
 
-The main command which controls everything is '/playerswap' or '/ps'.
+The main command which controls everything is '/playerswap' or '/ps'. 
+Permission: playerswap.admin
 | Arguments | Description |
 | -------- |-------------| 
 | toggle   | Toggles swapping on/off continuously.|
